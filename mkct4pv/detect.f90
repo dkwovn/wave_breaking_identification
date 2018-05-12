@@ -11,7 +11,6 @@
 !  flag=0 无视trace的限制，可以走之前走过的格点；也允许judge==0,即两边值相等的情况。
 !  flag=1
 !  flag=4 普通情况
-!  flag=5 代表从头格点开始搜索（已废弃？）
 !  flag=6 一种宽松方案，当judge/=dr_mode，judge=3即是因为等值线两边都是等值线格点无法判断才导致的时候，允许这样的点被接纳
 !  flag=7 一种宽松方案，当judge==0，即两边相等的时候，允许。
 !  flag=8 允许走之前画过的等值线格点
@@ -24,8 +23,9 @@
 !  flag2=6  允许judge==3的格点（两边都无法判断）
 !  flag2=7  允许judge==0的格点（两边相等）
 !  flag2=4  普通情况
-!	flag2=9 allow previous grid point
+!    flag2=9 allow previous grid point
 !about direction: east is 0, and the number increase anticlockwisely.
+
 module dtct
 use typedef
 use func
@@ -45,123 +45,100 @@ integer::a,b,c,d
 real::distance(0:7)
 type(cord)::trace_org(x_num,y_num),trace(x_num,y_num)
 if(dr_mode==1)then
-	step=1
-	lo=0
-	hi=7
+    step=1
+    lo=0
+    hi=7
 else if(dr_mode==2)then
-	step=-1
-	lo=7
-	hi=0
+    step=-1
+    lo=7
+    hi=0
 else
-	print*,'wrong dr_mode'
-	stop
+    print*,'wrong dr_mode'
+    stop
 end if
 !real::pv(x_num,y_num)
 rcd=0
 dlt=0
 !print*,'flag1:',flag1
 if(flag1==0.or.flag1==-1.or.flag1==2)then !flag=-1是允许走prev点的情况（到单等值线的尽头）
-	do i=1,x_num
-		do j=1,y_num
-			trace(i,j)%x=0 !解除“不走回头路”的第二类限制
-			trace(i,j)%y=0 !解除“不走回头路”的第二类限制
-		end do
-	end do
+    do i=1,x_num
+        do j=1,y_num
+            trace(i,j)%x=0 !解除“不走回头路”的第二类限制
+            trace(i,j)%y=0 !解除“不走回头路”的第二类限制
+        end do
+    end do
 else
-	do i=1,x_num
-		do j=1,y_num
-			trace(i,j)%x=trace_org(i,j)%x
-			trace(i,j)%y=trace_org(i,j)%y
-		end do
-	end do
+    do i=1,x_num
+        do j=1,y_num
+            trace(i,j)%x=trace_org(i,j)%x
+            trace(i,j)%y=trace_org(i,j)%y
+        end do
+    end do
 end if
 call get_cord(p%x,p%y,en_x,en_y)
 do i=0,7
-	gval(i)=grid(en_x(i),en_y(i))
+    gval(i)=grid(en_x(i),en_y(i))
 end do
 if(stat1(p%x,p%y)<0)then
-	start=0 !Need to be noticed
+    start=0 !Need to be noticed
 else
-	start=stat1(p%x,p%y)
+    start=stat1(p%x,p%y)
 end if
 cnt=0
 idx=0
 do k=lo,hi,step
-	i=mod(start+k+7,8)
-	!if(trace(en_x(i),en_y(i))==1.and.is_contour(grid,en_x(i),en_y(i))==0)then
-	!if(trace(en_x(i),en_y(i))==1)then
-	!	cycle
-	!if(mod(stat1(p%x,p%y)-i+8,8)==4.and.flag2/=9)then
-	if(en_x(i)==p%prev%x.and.en_y(i)==p%prev%y.and.flag2/=9)then
-		cycle
-	else
-		nb=mod(i+step+8,8)
-		if(gval(mod(i,8))==0.and.gval(nb)==2.and.stat1(en_x(i),en_y(i))/=i)then
-!		if(gval(mod(i,8))==0.and.gval(mod(i+1,8))==2)then
-				!print*,'inside:',en_x(i),en_y(i)
-				!print*,'inside:',trace(en_x(i),en_y(i))%x,trace(en_x(i),en_y(i))%y,en_x(nb),en_y(nb)
-			if(trace(en_x(i),en_y(i))%x/=en_x(nb).or.trace(en_x(i),en_y(i))%y/=en_y(nb))then
-!				print*,'inside:',trace(en_x(i),en_y(i))%x,trace(en_x(i),en_y(i))%y,en_x(nb),en_y(nb)
-!				print*,'en',en_x(i),en_y(i)
-				cnt=cnt+1
-				tmpx(cnt)=en_x(i)
-				tmpy(cnt)=en_y(i)
-				idx(cnt)=i
-				rcd(i)=cnt
-		!		trace_org(en_x(i),en_y(i))%x=en_x(nb)
-		!		trace_org(en_x(i),en_y(i))%y=en_y(nb)
-			end if
-		end if
-	end if
+    i=mod(start+k+7,8)
+    if(en_x(i)==p%prev%x.and.en_y(i)==p%prev%y.and.flag2/=9)then
+        cycle
+    else
+        nb=mod(i+step+8,8)
+        if(gval(mod(i,8))==0.and.gval(nb)==2.and.stat1(en_x(i),en_y(i))/=i)then
+            if(trace(en_x(i),en_y(i))%x/=en_x(nb).or.trace(en_x(i),en_y(i))%y/=en_y(nb))then
+                cnt=cnt+1
+                tmpx(cnt)=en_x(i)
+                tmpy(cnt)=en_y(i)
+                idx(cnt)=i
+                rcd(i)=cnt
+            end if
+        end if
+    end if
 end do
 if(cnt==0)then
-	do k=0,7
-		nb=mod(k+step+8,8)
-		!print*,'stat2:',en_x(k),en_y(k),stat2(en_x(k),en_y(k))
-		if(gval(k)==0.and.gval(nb)==2.and.((en_x(k)==p_node%x.and.en_y(k)==p_node%y)))then
-!		if(gval(k)==0.and.gval(nb)==2.and.stat2(en_x(k),en_y(k))==-9)then
-!		!if(gval(k)==1.and.en_x(k)==p_node%x.and.en_y(k)==p_node%y)then
-			cnt=cnt+1
-			tmpx(cnt)=en_x(k)
-			tmpy(cnt)=en_y(k)
-			rcd(k)=cnt
-		end if 
-	end do
+    do k=0,7
+        nb=mod(k+step+8,8)
+        if(gval(k)==0.and.gval(nb)==2.and.((en_x(k)==p_node%x.and.en_y(k)==p_node%y)))then
+            cnt=cnt+1
+            tmpx(cnt)=en_x(k)
+            tmpy(cnt)=en_y(k)
+            rcd(k)=cnt
+        end if 
+    end do
 end if
 if(cnt>1)then
-	do i=1,cnt
-		nb=mod(idx(i)+step+8,8)
-		dx=en_x(nb)-trace(p%x,p%y)%x
-		if(dx>=(x_num-10))then
-			dx=dx-x_num
-		else if(dx<=-(x_num-10))then
-			dx=dx+x_num
-		end if
-		dy=en_y(nb)-trace(p%x,p%y)%y
-		distance(i)=sqrt(dx**2*1.0+dy**2*1.0)
-	end do
-	!print*,'before*************'
-	!print*,tmpx(1),tmpy(1)
-	!print*,tmpx(2),tmpy(2)
-	!print*,'after*************'
-	mini=1
-	do i=1,cnt
-		if(distance(i)<distance(mini))then
-			mini=i
-		end if
-	end do
-	tmpx(1)=tmpx(mini)
-	tmpy(1)=tmpy(mini)
+    do i=1,cnt
+        nb=mod(idx(i)+step+8,8)
+        dx=en_x(nb)-trace(p%x,p%y)%x
+        if(dx>=(x_num-10))then
+            dx=dx-x_num
+        else if(dx<=-(x_num-10))then
+            dx=dx+x_num
+        end if
+        dy=en_y(nb)-trace(p%x,p%y)%y
+        distance(i)=sqrt(dx**2*1.0+dy**2*1.0)
+    end do
+    !print*,'before*************'
+    !print*,tmpx(1),tmpy(1)
+    !print*,tmpx(2),tmpy(2)
+    !print*,'after*************'
+    mini=1
+    do i=1,cnt
+        if(distance(i)<distance(mini))then
+            mini=i
+        end if
+    end do
+    tmpx(1)=tmpx(mini)
+    tmpy(1)=tmpy(mini)
 end if
-!if(cnt>1.and.p%x==p_node%x.and.p%y==p_node%y)then
-!	flag1=8
-!	stat2(p%x,p%y)=-9 !be exceptional grids when cnt==0
-!	call llrr(p%x,p%y,tmpx(1),tmpy(1),a,b,c,d,drct)
-!	trace_org(tmpx(1),tmpy(1))%x=a
-!	trace_org(tmpx(1),tmpy(1))%y=b
-!	p_node%x=tmpx(1)
-!	p_node%y=tmpy(1)
-!end if
 if(cnt>1.and.p%x==p_node%x.and.p%y==p_node%y) flag1=8
 end subroutine
 
@@ -170,63 +147,34 @@ use func
 real::pv(x_num,y_num),wtf
 integer::grid(x_num,y_num),i,j,m,n,nx,ny,ex,ey,wx,wy,sx,sy,dx,dy,tmpx(0:7),tmpy(0:7),flag=0,r
 integer::part_num,part(4)
-!do i=1,x_num
-!	do j=2,y_num-1
-!		if(val(1)>=pv(i,j))then  !If the value of the point is greater than val(1),select it as a candidate.
-!			nx=i
-!			sx=i
-!			ey=j
-!			wy=j
-!			ny=j+1
-!			sy=j-1
-!			ex=i+1
-!			wx=i-1
-!			if(ex>x_num)then
-!				ex=ex-x_num
-!			end if
-!			if(wx<1)then
-!				wx=wx+x_num
-!			end if
-!			if(pv(nx,ny)>val(1).or.pv(sx,sy)>val(1).or.pv(ex,ey)>val(1).or.pv(wx,wy)>val(1))then  
-!			!And if there is at least one point imediately beside the candidate has value less than val(1),recognize it as a grid point
-!				grid(i,j)=1
-!			end if
-!		end if
-!	end do
-!
-!end do
 do i=1,x_num
-	do j=2,y_num-1
-!		if(grid(i,j)==0)then
-		if(pv(i,j)>wtf)then
-			grid(i,j)=2
-		else
-			grid(i,j)=0
-		end if
-!		end if
-	end do
-	!grid(i,1)=-2
-	!grid(i,y_num)=-2 !这两行为后面的处理提供了方便
+    do j=2,y_num-1
+        if(pv(i,j)>wtf)then
+            grid(i,j)=2
+        else
+            grid(i,j)=0
+        end if
+    end do
 end do
 
 where(abs(pv)>0.9*abs(undef)) grid=-2
 
 do i=1,x_num
-	do j=2,y_num-1
-		if(grid(i,j)==1)then
-			call get_cord(i,j,tmpx,tmpy)
-			flag=0
-			do k=0,7
-				if(grid(tmpx(k),tmpy(k))==2)then
-					flag=1
-					exit
-				end if
-			end do
-			if(flag==0)then
-				grid(i,j)=0
-			end if
-		end if
-	end do
+    do j=2,y_num-1
+        if(grid(i,j)==1)then
+            call get_cord(i,j,tmpx,tmpy)
+            flag=0
+            do k=0,7
+                if(grid(tmpx(k),tmpy(k))==2)then
+                    flag=1
+                    exit
+                end if
+            end do
+            if(flag==0)then
+                grid(i,j)=0
+            end if
+        end if
+    end do
 end do
 end subroutine
 
@@ -235,54 +183,54 @@ use func
 implicit none
 integer::grid(x_num,y_num),environ(x_num,y_num),i,j,m,n,sum
 do i=2,x_num-1
-	do j=2,y_num-1
-		if(grid(i,j)==1)then
-			sum=0
-			do m=i-1,i+1
-				do n=j-1,j+1
-					if(grid(m,n)/=1.and.(m/=i.or.n/=j))then
-						sum=sum+1
-					end if
-				end do
-			end do
-			environ(i,j)=sum
-		end if
-	end do	
+    do j=2,y_num-1
+        if(grid(i,j)==1)then
+            sum=0
+            do m=i-1,i+1
+                do n=j-1,j+1
+                    if(grid(m,n)/=1.and.(m/=i.or.n/=j))then
+                        sum=sum+1
+                    end if
+                end do
+            end do
+            environ(i,j)=sum
+        end if
+    end do    
 end do
 do j=2,y_num-1
-	if(grid(1,j)==1)then
-		sum=0
-		do m=1,2
-			do n=j-1,j+1
-				if(grid(m,n)/=1.and.(m/=1.or.n/=j))then
-					sum=sum+1
-				end if
-			end do
-		end do
-		do n=j-1,j+1
-			if(grid(x_num,n)/=1)then
-				sum=sum+1
-			end if
-		end do
-		environ(1,j)=sum
-	end if
-	if(grid(x_num,j)==1)then
-		sum=0
-		do m=x_num-1,x_num
-			do n=j-1,j+1
-				if(grid(m,n)/=1.and.(m/=x_num.or.n/=j))then
-					sum=sum+1
-				end if
-			end do
-		end do
-		
-		do n=j-1,j+1
-			if(grid(1,n)/=1)then
-				sum=sum+1
-			end if
-		end do
-		environ(x_num,j)=sum
-	end if
+    if(grid(1,j)==1)then
+        sum=0
+        do m=1,2
+            do n=j-1,j+1
+                if(grid(m,n)/=1.and.(m/=1.or.n/=j))then
+                    sum=sum+1
+                end if
+            end do
+        end do
+        do n=j-1,j+1
+            if(grid(x_num,n)/=1)then
+                sum=sum+1
+            end if
+        end do
+        environ(1,j)=sum
+    end if
+    if(grid(x_num,j)==1)then
+        sum=0
+        do m=x_num-1,x_num
+            do n=j-1,j+1
+                if(grid(m,n)/=1.and.(m/=x_num.or.n/=j))then
+                    sum=sum+1
+                end if
+            end do
+        end do
+        
+        do n=j-1,j+1
+            if(grid(1,n)/=1)then
+                sum=sum+1
+            end if
+        end do
+        environ(x_num,j)=sum
+    end if
 end do
 end subroutine
 
@@ -294,17 +242,17 @@ integer::i
 is_contour=0
 call get_cord(x,y,en_x,en_y)
 if(grid(x,y)==0)then
-	do i=0,7,2
-		if(grid(en_x(i),en_y(i))==2)then
-			is_contour=1
-			return
-		end if
-	end do
+    do i=0,7,2
+        if(grid(en_x(i),en_y(i))==2)then
+            is_contour=1
+            return
+        end if
+    end do
 end if
 end function
 
 !given the point (x,y) and grid(x_num,y_num), get the patch including (x,y)
-!using recursion
+!using DFS
 recursive subroutine gen_patch(grid,patch_map,x,y,val)
 integer::x,y,val
 integer::grid(x_num,y_num),patch_map(x_num,y_num)
@@ -312,12 +260,13 @@ integer::en_x(0:7),en_y(0:7)
 patch_map(x,y)=val
 call get_cord(x,y,en_x,en_y)
 do i=0,7,2
-	if(grid(en_x(i),en_y(i))==val.and.patch_map(en_x(i),en_y(i))/=val.and.y>y_num/2+2)then
-		call gen_patch(grid,patch_map,en_x(i),en_y(i),val)
-	end if
+    if(grid(en_x(i),en_y(i))==val.and.patch_map(en_x(i),en_y(i))/=val.and.y>y_num/2+2)then
+        call gen_patch(grid,patch_map,en_x(i),en_y(i),val)
+    end if
 end do
 !print*,'before return'
 end subroutine
+
 end module dtct
 
 

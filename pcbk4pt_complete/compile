@@ -1,0 +1,7 @@
+#!/bin/bash
+rm *.o
+rm *.mod
+ifort -c constant.f90
+ifort -c func.f90
+ifort -c pick_event.f90
+ifort *.o -o pickevent3

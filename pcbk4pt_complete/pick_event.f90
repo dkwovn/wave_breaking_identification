@@ -466,7 +466,7 @@ do year=st_yr,end_yr
                         rdc_cnt=rdc_cnt-1
                         cycle                    !modified
                     end if
-                end if
+                !end if
                 p=>p%next
             end do
             !=== count event number ==============
